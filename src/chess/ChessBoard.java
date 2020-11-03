@@ -12,9 +12,9 @@ public class ChessBoard extends JFrame{
     private final static int[] horizontal = {2, 1, -1, -2, -2, -1, 1, 2};
     private final static int[] vertical = {-1, -2, -2, -1, 1, 2, 2, 1};
 
-    private final static int[][] accessibility = {{2,3,4,4},{3,4,6,6},{4,6,8,8},{4,6,8,8}};  // 1/4 fo board
+    private final static int[][] accessibility = {{2,3,4,4,4,4,3,2},{3,4,6,6,6,6,4,3},{4,6,8,8,8,8,6,4},{4,6,8,8,8,8,6,4},{4,6,8,8,8,8,6,4},{4,6,8,8,8,8,6,4},{3,4,6,6,6,6,4,3},{2,3,4,4,4,4,3,2}};
 
-    private static int currentRow, currentColumn;
+    private static int currentRow = -1, currentColumn = -1;
 
     public int[][] possibleMoves(int row, int column){
         int positions[][] = new int[8][2];
@@ -29,6 +29,7 @@ public class ChessBoard extends JFrame{
     public static int generateRandomNumber() { // between 0 to 7
         return (int)(Math.random() * 8);
     }
+
     ChessBoard() {
         super("Knight Moving");
         JPanel panel = new JPanel();
@@ -60,9 +61,10 @@ public class ChessBoard extends JFrame{
                             for(Square squareRow[]: squares)
                                 for(Square square : squareRow)
                                     square.setBlue(false);
-                            for(int i = 0; i < 8; i++){
-                                int row = possibleMoves(currentRow, currentColumn)[i][0];
-                                int col = possibleMoves(currentRow, currentColumn)[i][1];
+                            int positions[][] = possibleMoves(currentRow, currentColumn);
+                            for(int i = 0; i < 8; i++) {
+                                int row = positions[i][0];
+                                int col = positions[i][1];
                                 if(row >= 0 && row < 8 && col >= 0 && col < 8) {
                                     squares[row][col].setBlue(true);
                                 }
@@ -90,6 +92,71 @@ public class ChessBoard extends JFrame{
         resetButton = new JButton("Reset");
         runHeuristicButton = new JButton("heuristic Run");
         runRandomButton = new JButton("Random Run");
+
+        runHeuristicButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                boolean checkEnd = true;
+
+                for(int i = 0; i < 8 && checkEnd; i++ ) {
+                    for (Square square : squares[i]) {
+                        if (square.isBlue()) {
+                            checkEnd = false;
+                        }
+                    }
+                }
+
+                if(currentRow == -1){
+                    currentRow = generateRandomNumber();
+                    currentColumn = generateRandomNumber();
+                    squares[currentRow][currentColumn].setSequence(++Square.step);
+                    int positions[][] = possibleMoves(currentRow, currentColumn);
+                    for(int i = 0; i < 8; i++) {
+                        int row = positions[i][0];
+                        int col = positions[i][1];
+                        if (row >= 0 && row < 8 && col >= 0 && col < 8) {
+                            squares[row][col].setBlue(true);
+                        }
+                    }
+                }else{
+                    boolean pass = false;
+                    int min[] = {-1, -1};
+                    int positions[][] = possibleMoves(currentRow, currentColumn);
+                    for(int i = 0; i < 8; i++) {
+
+                        int row = positions[i][0];
+                        int column = positions[i][1];
+
+                        if(row >= 0 && row < 8 && column >= 0 && column < 8 && squares[row][column].isActivated()){
+                            pass = true;
+                            if(min[0] == -1 || accessibility[min[0]][min[1]] > accessibility[row][column]){
+                                min[0] = row;
+                                min[1] = column;
+                            }
+                        }
+                    }
+                    if(pass){
+                        for(Square squareRow[]: squares)
+                            for(Square square : squareRow)
+                                square.setBlue(false);
+                        currentRow = min[0];
+                        currentColumn = min[1];
+                        squares[currentRow][currentColumn].setSequence(++Square.step);
+                        positions = possibleMoves(currentRow, currentColumn);
+                        for(int i = 0; i < 8; i++) {
+                            int row = positions[i][0];
+                            int col = positions[i][1];
+                            if (row >= 0 && row < 8 && col >= 0 && col < 8) {
+                                squares[row][col].setBlue(true);
+                            }
+                        }
+                    }else{
+                        if(checkEnd) JOptionPane.showMessageDialog(null, Integer.toString(Square.step) + " Steps moved");
+                    }
+
+                }
+            }
+        });
         runRandomButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -99,19 +166,17 @@ public class ChessBoard extends JFrame{
                     for (Square square : squares[i]) {
                         if (square.isBlue()) {
                             checkEnd = false;
-                            currentRow = square.getPosition()[0];
-                            currentColumn = square.getPosition()[1];
-                            break;
                         }
                     }
                 }
-                if(checkEnd){
+                if(currentRow == -1){
                     currentRow = generateRandomNumber();
                     currentColumn = generateRandomNumber();
                     squares[currentRow][currentColumn].setSequence(++Square.step);
+                    int positions[][] = possibleMoves(currentRow, currentColumn);
                     for(int i = 0; i < 8; i++) {
-                        int row = possibleMoves(currentRow, currentColumn)[i][0];
-                        int col = possibleMoves(currentRow, currentColumn)[i][1];
+                        int row = positions[i][0];
+                        int col = positions[i][1];
                         if (row >= 0 && row < 8 && col >= 0 && col < 8) {
                             squares[row][col].setBlue(true);
                         }
@@ -120,15 +185,18 @@ public class ChessBoard extends JFrame{
                     final int randomChoice = generateRandomNumber();
                     int index;
                     boolean pass = false;
-                    for(int i = 0; i < 8 && !pass; i++) {
-                        if (randomChoice + i >= 8)
-                            index = Math.abs(randomChoice - i);
-                        else
+                    int positions[][] = possibleMoves(currentRow, currentColumn);
+                    for(int i = 0; (i < 8 && !pass); i++) {
+                        if(randomChoice + i >= 8){
+                            index = randomChoice + i - 8;
+                        }else{
                             index = randomChoice + i;
-                        System.out.println(index);
-                        int row = possibleMoves(currentRow, currentColumn)[index][0];
-                        int column = possibleMoves(currentRow, currentColumn)[index][1];
-                        if((row >= 0 && row < 8 && column >= 0 && column < 8 ) && squares[row][column].isActivated()){
+                        }
+
+                        int row = positions[index][0];
+                        int column = positions[index][1];
+
+                        if(row >= 0 && row < 8 && column >= 0 && column < 8 && squares[row][column].isActivated()){
                             pass = true;
                             currentRow = row;
                             currentColumn = column;
@@ -139,9 +207,10 @@ public class ChessBoard extends JFrame{
                             for(Square square : squareRow)
                                 square.setBlue(false);
                         squares[currentRow][currentColumn].setSequence(++Square.step);
+                        positions = possibleMoves(currentRow, currentColumn);
                         for(int i = 0; i < 8; i++) {
-                            int row = possibleMoves(currentRow, currentColumn)[i][0];
-                            int col = possibleMoves(currentRow, currentColumn)[i][1];
+                            int row = positions[i][0];
+                            int col = positions[i][1];
                             if (row >= 0 && row < 8 && col >= 0 && col < 8) {
                                 squares[row][col].setBlue(true);
                             }
@@ -160,6 +229,8 @@ public class ChessBoard extends JFrame{
                     for(Square square : squareRow){
                         square.reset();
                     }
+                currentRow = -1;
+                currentColumn = -1;
             }
         });
         buttonsPanel.add(resetButton);
