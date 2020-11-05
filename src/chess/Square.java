@@ -75,13 +75,6 @@ public class Square extends JButton {
         this.setOpaque(true);
         this.setBorderPainted(false);
         this.setFont(new Font("Arial", Font.PLAIN, 25));
-//        this.addActionListener(new ActionListener() {
-//            @Override
-//            public void actionPerformed(ActionEvent e) {
-//                if(isActivated()){
-//                    setSequence(++step);
-//                }
-//            }
-//        });
+        this.setFont(new Font("Arial", Font.PLAIN, 25));
     }
 }
